@@ -1,4 +1,3 @@
-import redis from "./src/redis.js";
 import express from "express";
 import mongoose from "mongoose";
 import { createClient } from "redis";
@@ -9,9 +8,9 @@ app.use(express.json());
 
 /* ---------------- MongoDB ---------------- */
 
-mongoose.connect("mongodb://127.0.0.1:27017/redislockdemo")
+mongoose.connect(process.env.MONGO_URI)
 .then(()=>console.log("MongoDB Connected"))
-.catch(err=>console.log("MongoDB not connected"));
+.catch(err=>console.log("MongoDB Error:",err));
 
 /* ---------------- Redis ---------------- */
 
@@ -19,13 +18,17 @@ let redisClient;
 
 async function connectRedis(){
   try{
-    redisClient = createClient();
+
+    redisClient = createClient({
+      url: process.env.REDIS_URL
+    });
 
     redisClient.on("error",(err)=>{
       console.log("Redis error:",err.message);
     });
 
     await redisClient.connect();
+
     console.log("Redis connected");
 
   }catch(error){
