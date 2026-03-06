@@ -10,25 +10,42 @@ app.use(express.json());
 
 mongoose.connect("mongodb://127.0.0.1:27017/redislockdemo")
 .then(() => console.log("MongoDB Connected"))
-.catch((err) => console.log(err));
+.catch((err) => console.log("MongoDB Error:", err));
 
 /* ---------------- Redis Connection ---------------- */
 
-const redisClient = createClient();
+let redisClient;
 
-redisClient.on("error", (err) => console.log("Redis Error", err));
+try {
+  redisClient = createClient();
 
-await redisClient.connect();
+  redisClient.on("error", (err) => {
+    console.log("Redis Error:", err);
+  });
+
+  await redisClient.connect();
+
+  console.log("Redis connected");
+
+} catch (error) {
+
+  console.log("Redis not available, running without Redis");
+
+}
 
 /* ---------------- Routes ---------------- */
 
 app.get("/", (req, res) => {
-  res.send("Server is running 🚀");
+  res.send("Server is running on Render 🚀");
 });
 
-/* Acquire Lock */
+/* Lock Route */
 
 app.get("/lock", async (req, res) => {
+
+  if (!redisClient) {
+    return res.send("Redis not connected");
+  }
 
   const lockId = uuidv4();
 
@@ -40,14 +57,18 @@ app.get("/lock", async (req, res) => {
   if (result) {
     res.send(`Lock acquired with id: ${lockId}`);
   } else {
-    res.send("Resource is already locked");
+    res.send("Resource already locked");
   }
 
 });
 
-/* Release Lock */
+/* Unlock Route */
 
 app.get("/unlock", async (req, res) => {
+
+  if (!redisClient) {
+    return res.send("Redis not connected");
+  }
 
   await redisClient.del("resource_lock");
 
