@@ -1,17 +1,13 @@
-import { createClient } from 'redis';
+import Redis from "ioredis";
 
-// Create a Redis client instance
-const redisClient = createClient();
+const redis = new Redis(process.env.REDIS_URL);
 
-// Handle Redis connection errors
-redisClient.on('error', (err) => {
-    console.error('Redis Error:', err);
+redis.on("connect", () => {
+  console.log("Redis Connected");
 });
 
-// Function to connect to Redis
-const connectRedis = async () => {
-    await redisClient.connect();
-    console.log('✅ Redis Connected');
-};
+redis.on("error", (err) => {
+  console.error("Redis Error:", err);
+});
 
-export { redisClient, connectRedis };
+export default redis;

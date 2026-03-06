@@ -1,3 +1,4 @@
+import redis from "./src/redis.js";
 import express from "express";
 import mongoose from "mongoose";
 import { createClient } from "redis";
