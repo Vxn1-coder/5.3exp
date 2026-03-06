@@ -1,15 +1,15 @@
 {
   "name": "experiment43",
   "version": "1.0.0",
+  "description": "Redis locking mechanism experiment",
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "dev": "nodemon index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node index.js",
+    "dev": "nodemon index.js"
   },
   "author": "",
   "license": "ISC",
-  "description": "",
   "dependencies": {
     "express": "^5.2.1",
     "mongoose": "^9.2.1",

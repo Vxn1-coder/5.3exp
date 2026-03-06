@@ -1,30 +1,64 @@
-// Node.js is a JavaScript runtime built on Chrome's V8 JavaScript engine. 
-// It allows developers to run JavaScript code on the server side, enabling the creation of scalable 
-// and high-performance web applications. Node.js uses an event-driven, non-blocking I/O model, 
-// making it efficient for handling concurrent requests and real-time applications. 
-// It has a vast ecosystem of libraries and frameworks, such as Express.js, which simplifies 
-// the development of web servers and APIs.
+import express from "express";
+import mongoose from "mongoose";
+import { createClient } from "redis";
+import { v4 as uuidv4 } from "uuid";
 
-// Node.js entry point for the application. This file is responsible for starting the server and 
-// connecting to necessary services like Redis.
+const app = express();
+app.use(express.json());
 
-// Importing mechanism - ES6 Modules (import/export) is a standardized module system in JavaScript that allows 
-// developers to organize and reuse code across different files and modules. It provides a clean and intuitive 
-// syntax for importing and exporting functions, objects, or values between modules. In this file, we use the
-// import statement to bring in the Express application instance from the app.js file and the connectRedis function
-// from the Redis configuration file. This allows us to set up our server and establish a connection to Redis
-// before starting to listen for incoming requests.
-import app from './src/app.js';
-import { connectRedis } from './src/config/redis.js';
+/* ---------------- MongoDB Connection ---------------- */
 
-const PORT = 3000;
+mongoose.connect("mongodb://127.0.0.1:27017/redislockdemo")
+.then(() => console.log("MongoDB Connected"))
+.catch((err) => console.log(err));
 
-const startServer = async () => {
-    await connectRedis();
+/* ---------------- Redis Connection ---------------- */
 
-    app.listen(PORT, () => {
-        console.log(`🚀 Server running on port ${PORT}`);
-    });
-};
+const redisClient = createClient();
 
-startServer();
+redisClient.on("error", (err) => console.log("Redis Error", err));
+
+await redisClient.connect();
+
+/* ---------------- Routes ---------------- */
+
+app.get("/", (req, res) => {
+  res.send("Server is running 🚀");
+});
+
+/* Acquire Lock */
+
+app.get("/lock", async (req, res) => {
+
+  const lockId = uuidv4();
+
+  const result = await redisClient.set("resource_lock", lockId, {
+    NX: true,
+    EX: 10
+  });
+
+  if (result) {
+    res.send(`Lock acquired with id: ${lockId}`);
+  } else {
+    res.send("Resource is already locked");
+  }
+
+});
+
+/* Release Lock */
+
+app.get("/unlock", async (req, res) => {
+
+  await redisClient.del("resource_lock");
+
+  res.send("Lock released");
+
+});
+
+/* ---------------- Server Port ---------------- */
+
+const PORT = process.env.PORT || 5000;
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
